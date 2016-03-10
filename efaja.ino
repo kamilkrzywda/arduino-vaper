@@ -1,14 +1,18 @@
 #include <EEPROM.h>
 
+//coil resistance and batery voltage sensors
 const int coilSensor = A0;
 const int batterySensor = A1;
 
+//buttons
 const int button1 = A2;
 const int button2 = A3;
 
+//heater button and mosfet output
 const int heaterButton = 9;
 const int heaterOutput = 10;
 
+//led pins
 const int led1 = 3;
 const int led2 = 5;
 const int led3 = 6;
@@ -36,9 +40,11 @@ float powerPWM = 0;
 int heating = 0;
 
 //sleep
-
 int sleep = 0;
 
+/*
+ * increase power setting
+ */
 void addPower(int setPower){
   powerSet+=setPower;
   if(powerSet > 31){
@@ -48,6 +54,9 @@ void addPower(int setPower){
   setLeds();
 }
 
+/*
+ * decrease power setting
+ */
 void subPower(int setPower){
   powerSet-=setPower;
   if(powerSet < 1){
@@ -57,6 +66,9 @@ void subPower(int setPower){
   setLeds();
 }
 
+/*
+ * update status leds
+ */
 void setLeds(){
   if(powerSet <= 10){
     analogWrite(led1, powerSet*powerSet*2);
@@ -77,6 +89,9 @@ void setLeds(){
   }
 }
 
+/*
+ * read button
+ */
 void readStatus(){
   button1Status = analogRead(button1);
   button2Status = analogRead(button2);
@@ -106,6 +121,9 @@ void readStatus(){
   }
 }
 
+/*
+ * buttons actions
+ */
 void checkButtons(){
   if(button1Status < 500){
     sleep = 0;
@@ -126,6 +144,9 @@ void checkButtons(){
   }
 }
 
+/*
+ * heating
+ */
 void heat(){
   if(heating > 0){
     if(batteryVoltage > 7){
@@ -151,6 +172,9 @@ void heat(){
   }
 }
 
+/*
+ * debug
+ */
 void serialDebug(){
   Serial.print(button1Status);
   Serial.print("\t");
@@ -193,7 +217,6 @@ void loop() {
     checkButtons();
     heat();
   }
-
   
   delay(1);
   
