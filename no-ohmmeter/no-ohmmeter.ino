@@ -1,5 +1,8 @@
 #include <EEPROM.h>
 
+const int sleepTime = 5000;
+const int boostTime = 200;
+
 //coil resistance and batery voltage sensors
 const int batterySensor = A1;
 
@@ -44,15 +47,16 @@ int sleep = 0;
  */
 void setPower(int power){
   powerSet = power;
-  if(powerSet > 193){
-    powerSet = 193;
+  if(powerSet > 192){
+    powerSet = 192;
     powerPWM = 255;
-  }else if(powerSet < 1){
-    powerSet = 1;
+  }else if(powerSet < 5){
+    powerSet = 5;
   }else{
     powerPWM = powerSet;
   }
   EEPROM.write(0, powerSet);
+  setLeds();
 }
 
 void updateLeds(){
@@ -62,18 +66,18 @@ void updateLeds(){
 }
 
 void setLeds(){
-  if(powerSet <= 64){
-    led1Light = powerSet*powerSet/32;
+  if(powerSet <= 63){
+    led1Light = powerSet*powerSet/16;
     led2Light = 0;
     led3Light = 0;
-  }else if(powerSet <= 128){
+  }else if(powerSet <= 127){
     led1Light = 255;
-    led2Light = (powerSet-64)*(powerSet-64)/32;
+    led2Light = (powerSet-64)*(powerSet-64)/16;
     led3Light = 0;
-  }else if(powerSet <= 192){
+  }else if(powerSet <= 191){
     led1Light = 255;
     led2Light = 255;
-    led3Light = (powerSet-128)*(powerSet-128)/32;
+    led3Light = (powerSet-128)*(powerSet-128)/16;
   }else{
     led1Light = (sin(((float)millis()+1000)/500)+1)*100;
     led2Light = (sin(((float)millis()+500)/500)+1)*100;
@@ -91,8 +95,20 @@ void readStatus(){
   heaterButtonStatus = digitalRead(heaterButton);
 
   if(heaterButtonStatus == HIGH){
+    if(sleep > sleepTime){
+      led1Light = 255;
+      led2Light = 255;
+      led3Light = 255;
+      updateLeds();
+      delay(100);
+      led1Light = 0;
+      led2Light = 0;
+      led3Light = 0;
+      updateLeds();
+      delay(100);
+      setLeds();
+    }
     sleep = 0;
-    setLeds();
   }
   
   if(heating == 0){
@@ -105,13 +121,13 @@ void readStatus(){
  * buttons actions
  */
 void checkButtons(){
-  if(button1Status < 900){
+  if(button1Status < 1000){
     sleep = 0; 
     setPower(powerSet+1);
     delay(10);
   }
   
-  if(button2Status < 900){
+  if(button2Status < 1000){
     sleep = 0;
     setPower(powerSet-1);
     delay(10);
@@ -124,17 +140,29 @@ void checkButtons(){
   }
 }
 
+void showBatteryStatus(){
+  led1Light = constrain((batteryVoltage-7)*255,0,255);
+  led2Light = constrain((batteryVoltage-8)*255,0,255);
+  led3Light = constrain((batteryVoltage-9)*255,0,255);
+  
+  updateLeds();
+}
+
 /*
  * heating
  */
 void heat(){
   if(heating > 0){
     if(batteryVoltage > 7){
-      analogWrite(heaterOutput,255-powerPWM);
-      Serial.println(255-powerPWM);
-      if(heating > 100){
-        heating = 0;
-        digitalWrite(heaterOutput,HIGH);
+      if(heating == 1){
+        showBatteryStatus();
+      }else if(heating == 100){
+        setLeds(); 
+      }
+      if(heating < boostTime){
+        analogWrite(heaterOutput,255-powerPWM*2);
+      }else{
+        analogWrite(heaterOutput,255-powerPWM);
       }
     }else{
       for(int i=0;i<6;i++){
@@ -188,12 +216,11 @@ void loop() {
   
   readStatus();
 
-  if(sleep == 20000){
+  if(sleep == sleepTime){
     analogWrite(led1,0);
     analogWrite(led2,0);
     analogWrite(led3,0);
-  }else if(sleep < 20000){
-    setLeds();
+  }else if(sleep < sleepTime){
     checkButtons();
     heat();
   }
