@@ -236,6 +236,9 @@ void loop() {
     checkButtons();
     heat();
   }
+  if(powerPWM == 255){
+    setLeds(); 
+  }
   delay(2);
   
   //serialDebug();
