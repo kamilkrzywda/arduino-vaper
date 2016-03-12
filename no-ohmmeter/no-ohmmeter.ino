@@ -4,9 +4,9 @@
  * settings
  */
 const int sleepTime = 30000;     //sleep timer
-const int boostTime = 200;      //preheat boost time
+const int preheatTime = 200;      //preheat boost time
 
-const int buttonsSensitivity = 1000;  //touch buttons sensitivity
+const int buttonsSensitivity = 900;  //touch buttons sensitivity
 const int batteryCal = 37;             //battery callibration value
 
 /* 
@@ -32,6 +32,7 @@ int heaterButtonStatus = 0;
 
 int batterySensorValue = 0;
 float batteryVoltage = 8.00;
+float voltageCorrection = 1.00;
 
 int powerSet = 0;
 int powerPWM = 0;
@@ -158,10 +159,11 @@ void heat(){
   if(heating > 0){
     if(batteryVoltage > 7){
       //boost power at start to preheat coil
-      if(heating < boostTime){
-        analogWrite(heaterOutput,constrain(255-powerPWM*2,0,255));
+      voltageCorrection = (7.0/batteryVoltage)*(7.0/batteryVoltage);
+      if(heating < preheatTime){
+        analogWrite(heaterOutput,constrain(255-powerPWM*voltageCorrection*2,0,255));
       }else{
-        analogWrite(heaterOutput,255-powerPWM);
+        analogWrite(heaterOutput,255-powerPWM*voltageCorrection);
       }
     }else{
       //battery low alert
